@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Treino de Fala — 1 Minuto</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0e0c;
+    --surface: #1a1814;
+    --border: #2e2b26;
+    --accent: #d4a853;
+    --accent-dim: #7a5e28;
+    --text: #e8e2d9;
+    --text-muted: #6b6459;
+    --danger: #c0392b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    overflow: hidden;
+  }
+
+  /* Grain texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.5rem;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+  }
+
+  .label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 2.8rem);
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text);
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  /* Topic card */
+  .topic-card {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .topic-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.5;
+  }
+
+  .topic-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .topic-text {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.2rem, 3vw, 1.6rem);
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--text);
+    transition: opacity 0.3s;
+  }
+
+  .topic-text.fade {
+    opacity: 0;
+  }
+
+  .topic-category {
+    font-size: 0.75rem;
+    color: var(--accent-dim);
+    font-style: italic;
+    font-family: 'Playfair Display', serif;
+  }
+
+  /* Timer ring */
+  .timer-wrap {
+    position: relative;
+    width: 160px;
+    height: 160px;
+  }
+
+  .timer-svg {
+    position: absolute;
+    inset: 0;
+    transform: rotate(-90deg);
+  }
+
+  .timer-track {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 3;
+  }
+
+  .timer-progress {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 440;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s linear, stroke 0.3s;
+  }
+
+  .timer-inner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+  }
+
+  .timer-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 2.4rem;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .timer-display.urgent {
+    color: var(--danger);
+    animation: pulse 0.5s ease-in-out infinite alternate;
+  }
+
+  @keyframes pulse {
+    from { opacity: 1; }
+    to { opacity: 0.6; }
+  }
+
+  .timer-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* Buttons */
+  .actions {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn:hover {
+    border-color: var(--text-muted);
+    color: var(--text);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+    font-weight: 500;
+  }
+
+  .btn-primary:hover {
+    background: #e0b85a;
+    border-color: #e0b85a;
+    color: var(--bg);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn-danger {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  .btn-danger:hover {
+    background: var(--danger);
+    color: #fff;
+  }
+
+  /* Stats */
+  .stats {
+    display: flex;
+    gap: 2rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1.5rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .stat {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* Done state */
+  .done-message {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-style: italic;
+    color: var(--accent);
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.5s;
+    min-height: 1.5rem;
+  }
+
+  .done-message.visible {
+    opacity: 1;
+  }
+
+  /* Time selector */
+  .time-selector {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .time-btn {
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .time-btn:hover {
+    border-color: var(--text-muted);
+    color: var(--text);
+  }
+
+  .time-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+    font-weight: 500;
+  }
+
+  .time-selector-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* Instruction */
+  .instruction {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.6;
+    max-width: 380px;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <p class="label">Treino Offline · 30 dias</p>
+    <h1>Fala por<br><em>1 minuto.</em></h1>
+  </div>
+
+  <div class="time-selector">
+    <span class="time-selector-label">Duração →</span>
+    <button class="time-btn active" onclick="setTime(1, this)">1 min</button>
+    <button class="time-btn" onclick="setTime(2, this)">2 min</button>
+    <button class="time-btn" onclick="setTime(3, this)">3 min</button>
+    <button class="time-btn" onclick="setTime(5, this)">5 min</button>
+    <button class="time-btn" onclick="setTime(10, this)">10 min</button>
+    <button class="time-btn" onclick="setTime(15, this)">15 min</button>
+  </div>
+
+  <div class="topic-card" id="topicCard">
+    <span class="topic-tag" id="topicTag">tema</span>
+    <p class="topic-text" id="topicText">Clique em "Novo Tema" para começar</p>
+    <span class="topic-category" id="topicCategory"></span>
+  </div>
+
+  <div class="timer-wrap">
+    <svg class="timer-svg" viewBox="0 0 160 160">
+      <circle class="timer-track" cx="80" cy="80" r="70"/>
+      <circle class="timer-progress" id="timerProgress" cx="80" cy="80" r="70"/>
+    </svg>
+    <div class="timer-inner">
+      <span class="timer-display" id="timerDisplay">1:00</span>
+      <span class="timer-label" id="timerLabel">minuto</span>
+    </div>
+  </div>
+
+  <p class="done-message" id="doneMessage">Gravação concluída. Joga na pasta e segue.</p>
+
+  <div class="actions">
+    <button class="btn" id="newTopicBtn" onclick="newTopic()">↺ Novo Tema</button>
+    <button class="btn btn-primary" id="startBtn" onclick="startTimer()" disabled>▶ Iniciar</button>
+    <button class="btn btn-danger" id="resetBtn" onclick="resetTimer()" style="display:none">■ Parar</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-num" id="countDisplay">0</span>
+      <span class="stat-label">gravações hoje</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num" id="totalDisplay">0</span>
+      <span class="stat-label">total no mês</span>
+    </div>
+  </div>
+
+  <p class="instruction">Sorteie um tema → ligue a câmera → fale por 1 minuto.<br>Não pare no meio. Termine sempre.</p>
+
+</div>
+
+<script>
+const topics = [
+  { text: "Se você pudesse jantar com qualquer pessoa da história, quem seria e por quê?", cat: "pessoas" },
+  { text: "Qual é o melhor conselho que você já recebeu de um estranho?", cat: "vida" },
+  { text: "Se os animais pudessem falar, qual seria o mais irritante?", cat: "imaginação" },
+  { text: "O que você faria com 24 horas completamente livres e sem culpa?", cat: "vida" },
+  { text: "Qual invenção humana você acha que foi mais subestimada?", cat: "ideias" },
+  { text: "Se você tivesse que morar em outro país pelo resto da vida, qual seria?", cat: "mundo" },
+  { text: "O que uma criança de 8 anos te ensinaria que adultos esqueceram?", cat: "reflexão" },
+  { text: "Qual é a coisa mais estranha que você já comeu?", cat: "experiências" },
+  { text: "Se você fosse um personagem de filme, em qual gênero você viveria?", cat: "imaginação" },
+  { text: "O que você acha que vai existir daqui a 50 anos que hoje parece impossível?", cat: "futuro" },
+  { text: "Qual é a música que mais te marca e por quê?", cat: "cultura" },
+  { text: "Se você pudesse eliminar uma palavra do vocabulário, qual seria?", cat: "linguagem" },
+  { text: "O que você defenderia com paixão mesmo sem ter estudado o assunto?", cat: "opinião" },
+  { text: "Qual é o filme ou série que mais mudou como você vê o mundo?", cat: "cultura" },
+  { text: "Se a sua vida fosse um livro, como seria o título do capítulo atual?", cat: "reflexão" },
+  { text: "Qual superpoder seria inútil mas você escolheria mesmo assim?", cat: "imaginação" },
+  { text: "O que te faz continuar quando tudo dá vontade de parar?", cat: "vida" },
+  { text: "Qual é a coisa mais corajosa que você já fez sem perceber na hora?", cat: "experiências" },
+  { text: "Se você pudesse aprender qualquer habilidade em uma semana, qual seria?", cat: "ideias" },
+  { text: "O que você acha que as pessoas erram ao tentar impressionar os outros?", cat: "opinião" },
+  { text: "Qual é o lugar que você visitou que te surpreendeu mais do que esperava?", cat: "mundo" },
+  { text: "Se você tivesse que explicar a internet para alguém de 1800, o que diria?", cat: "imaginação" },
+  { text: "Qual é o maior mito que as pessoas acreditam sobre felicidade?", cat: "reflexão" },
+  { text: "O que você faria diferente se soubesse que ninguém ia te ver fazendo?", cat: "vida" },
+  { text: "Qual é a coisa mais absurda que alguém já te pediu para fazer?", cat: "experiências" },
+  { text: "Se você pudesse voltar a qualquer época da história só para observar, qual seria?", cat: "história" },
+  { text: "O que te deixa genuinamente curioso — sem utilidade nenhuma?", cat: "ideias" },
+  { text: "Qual é a opinião impopular que você defende em silêncio?", cat: "opinião" },
+  { text: "Se sua personalidade fosse um clima, como seria o tempo hoje?", cat: "imaginação" },
+  { text: "O que você diria para uma plateia de mil pessoas se tivesse 1 minuto?", cat: "desafio" },
+  { text: "Qual é a coisa mais simples que te dá uma alegria desproporcional?", cat: "vida" },
+  { text: "Se você pudesse redesenhar uma regra social, qual seria?", cat: "ideias" },
+  { text: "O que você acha que os livros ensinam que a escola nunca ensinou?", cat: "reflexão" },
+  { text: "Qual foi o momento em que você percebeu que tinha crescido?", cat: "vida" },
+  { text: "Se você fosse um ingrediente culinário, qual seria e por quê?", cat: "imaginação" },
+  { text: "O que você faria se descobrisse que tem um talento escondido amanhã?", cat: "imaginação" },
+  { text: "Qual é a diferença entre ser corajoso e ser imprudente?", cat: "reflexão" },
+  { text: "O que te faz rir mesmo quando não deveria?", cat: "vida" },
+  { text: "Se você pudesse mandar uma mensagem para o mundo inteiro, o que diria?", cat: "desafio" },
+  { text: "Qual é o hábito de outras pessoas que você nunca vai entender?", cat: "opinião" },
+];
+
+let timer = null;
+let selectedMinutes = 1;
+let seconds = 60;
+let running = false;
+let currentTopic = null;
+let todayCount = parseInt(localStorage.getItem('today_count') || '0');
+let totalCount = parseInt(localStorage.getItem('total_count') || '0');
+let lastDate = localStorage.getItem('last_date') || '';
+
+// Reset daily count if new day
+const today = new Date().toDateString();
+if (lastDate !== today) {
+  todayCount = 0;
+  localStorage.setItem('today_count', '0');
+  localStorage.setItem('last_date', today);
+}
+
+function setTime(mins, btn) {
+  if (running) return;
+  selectedMinutes = mins;
+  seconds = mins * 60;
+  updateDisplay();
+  document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('timerLabel').textContent = mins === 1 ? 'minuto' : `${mins} minutos`;
+}
+
+updateStats();
+
+function newTopic() {
+  if (running) return;
+  resetTimer();
+
+  const el = document.getElementById('topicText');
+  el.classList.add('fade');
+
+  setTimeout(() => {
+    let t;
+    do { t = topics[Math.floor(Math.random() * topics.length)]; }
+    while (t === currentTopic);
+    currentTopic = t;
+
+    document.getElementById('topicText').textContent = t.text;
+    document.getElementById('topicCategory').textContent = t.cat;
+    document.getElementById('topicTag').textContent = 'tema sorteado';
+    el.classList.remove('fade');
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('doneMessage').classList.remove('visible');
+  }, 200);
+}
+
+function startTimer() {
+  if (!currentTopic) return;
+  running = true;
+  document.getElementById('startBtn').style.display = 'none';
+  document.getElementById('newTopicBtn').disabled = true;
+  document.getElementById('resetBtn').style.display = 'block';
+  document.getElementById('doneMessage').classList.remove('visible');
+
+  timer = setInterval(() => {
+    seconds--;
+    updateDisplay();
+    if (seconds <= 0) {
+      clearInterval(timer);
+      onDone();
+    }
+  }, 1000);
+}
+
+function resetTimer() {
+  clearInterval(timer);
+  running = false;
+  seconds = selectedMinutes * 60;
+  updateDisplay();
+  document.getElementById('startBtn').style.display = 'block';
+  document.getElementById('startBtn').disabled = !currentTopic;
+  document.getElementById('newTopicBtn').disabled = false;
+  document.getElementById('resetBtn').style.display = 'none';
+  document.getElementById('timerDisplay').classList.remove('urgent');
+  document.getElementById('timerProgress').style.strokeDashoffset = '0';
+  document.getElementById('timerProgress').style.stroke = 'var(--accent)';
+}
+
+function onDone() {
+  running = false;
+  todayCount++;
+  totalCount++;
+  localStorage.setItem('today_count', todayCount);
+  localStorage.setItem('total_count', totalCount);
+  localStorage.setItem('last_date', today);
+  updateStats();
+
+  document.getElementById('resetBtn').style.display = 'none';
+  document.getElementById('startBtn').style.display = 'block';
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('newTopicBtn').disabled = false;
+  document.getElementById('timerDisplay').classList.remove('urgent');
+  document.getElementById('doneMessage').classList.add('visible');
+  document.getElementById('timerProgress').style.stroke = 'var(--accent)';
+}
+
+function updateDisplay() {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  document.getElementById('timerDisplay').textContent =
+    `${m}:${s.toString().padStart(2, '0')}`;
+
+  // Ring progress
+  const pct = seconds / (selectedMinutes * 60);
+  const circumference = 440;
+  document.getElementById('timerProgress').style.strokeDashoffset =
+    circumference * (1 - pct);
+
+  if (seconds <= 10) {
+    document.getElementById('timerDisplay').classList.add('urgent');
+    document.getElementById('timerProgress').style.stroke = 'var(--danger)';
+  }
+}
+
+function updateStats() {
+  document.getElementById('countDisplay').textContent = todayCount;
+  document.getElementById('totalDisplay').textContent = totalCount;
+}
+</script>
+</body>
+</html>
